@@ -1,10 +1,56 @@
 <?xml version='1.1' encoding='UTF-8'?>
 <hudson.model.Queue_-State>
-  <items/>
+  <items>
+    <hudson.model.Queue_-WaitingItem>
+      <actions>
+        <hudson.model.CauseAction>
+          <causeBag class="linked-hash-map">
+            <entry>
+              <hudson.model.Cause_-RemoteCause>
+                <addr>172.18.0.1</addr>
+              </hudson.model.Cause_-RemoteCause>
+              <int>1</int>
+            </entry>
+          </causeBag>
+        </hudson.model.CauseAction>
+      </actions>
+      <id>79</id>
+      <task class="org.jenkinsci.plugins.workflow.job.WorkflowJob">docker</task>
+      <inQueueSince>1790922808637</inQueueSince>
+      <timestamp>
+        <time>1790922813637</time>
+        <timezone>Etc/UTC</timezone>
+      </timestamp>
+    </hudson.model.Queue_-WaitingItem>
+    <hudson.model.Queue_-BuildableItem>
+      <actions/>
+      <id>80</id>
+      <task class="org.jenkinsci.plugins.workflow.support.steps.ExecutorStepExecution$PlaceholderTask" plugin="workflow-durable-task-step@1479.v56e587f413a_7">
+        <context class="org.jenkinsci.plugins.workflow.cps.CpsStepContext" plugin="workflow-cps@4383.v04fa_a_3d67b_d9">
+          <executionRef class="org.jenkinsci.plugins.workflow.job.WorkflowRun$Owner" plugin="workflow-job@1571.1580.v18e46842c125">
+            <job>docker</job>
+            <id>51</id>
+          </executionRef>
+          <id>3</id>
+          <bodyHeads/>
+          <body class="org.jenkinsci.plugins.workflow.cps.StaticBodyReference" resolves-to="org.jenkinsci.plugins.workflow.cps.HandleBodyReference">
+            <id>1</id>
+          </body>
+          <threadId>0</threadId>
+          <stepDescriptorId>org.jenkinsci.plugins.workflow.support.steps.ExecutorStep</stepDescriptorId>
+        </context>
+        <labelIsSelfLabel>false</labelIsSelfLabel>
+        <runId>docker#51</runId>
+      </task>
+      <inQueueSince>1790922809068</inQueueSince>
+      <buildableStartMilliseconds>1790922809070</buildableStartMilliseconds>
+      <isPending>false</isPending>
+    </hudson.model.Queue_-BuildableItem>
+  </items>
   <properties>
     <entry>
       <string>jenkins.model.queue.QueueIdStrategy$DefaultStrategy</string>
-      <long>69</long>
+      <long>80</long>
     </entry>
   </properties>
 </hudson.model.Queue_-State>
