@@ -1,15 +1,14 @@
 version: '3.8'
-
 services:
   jenkins:
-    image: jenkins/jenkins:lts-jdk17
-    container_name: jenkins-server
-    restart: unless-stopped
-    user: root # 도커 명령어를 실행할 권한 확보
+    image: jenkins/jenkins:lts
+    container_name: jenkins
+    user: root
     ports:
-      - "8080:8080"   # 젠킨스 웹 UI 포트
-      - "50000:50000" # 젠킨스 에이전트 통신 포트
+      - "8080:8080"
+      - "50000:50000"
     volumes:
-      - ./jenkins_home:/var/jenkins_home # 젠킨스 데이터/설정 보관
-      - /var/run/docker.sock:/var/run/docker.sock # 젠킨스 안에서 호스트 도커 사용 (DooD)
-      - /usr/bin/docker:/usr/bin/docker # 호스트의 docker CLI 연동
+      - ./jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock  # DooD 설정
+      - /usr/bin/docker:/usr/bin/docker
+      - ~/kkk:/var/jenkins_home/workspace/kkk_local # 호스트의 ~/kkk를 젠킨스 내부로 마운트

@@ -2,10 +2,21 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 4753:
+/***/ 8226:
 /***/ (function(__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) {
 
 
+;// ./src/main/js/util/behavior-shim.js
+function specify(selector, id, priority, behavior) {
+  Behaviour.specify(selector, id, priority, behavior);
+}
+function applySubtree(startNode, includeSelf) {
+  Behaviour.applySubtree(startNode, includeSelf);
+}
+/* harmony default export */ var behavior_shim = ({
+  specify,
+  applySubtree
+});
 ;// ./src/main/js/util/dom.js
 function createElementFromHtml(html) {
   const template = document.createElement("template");
@@ -13,7 +24,8 @@ function createElementFromHtml(html) {
   return template.content.firstElementChild;
 }
 function toId(string) {
-  return string.trim().replace(/[\W_]+/g, "-").toLowerCase();
+  const trimmed = string.trim();
+  return Array.from(trimmed).map(c => c.codePointAt(0).toString(16)).join("-");
 }
 ;// ./src/main/js/util/security.js
 function xmlEscape(str) {
@@ -34,6 +46,8 @@ function xmlEscape(str) {
 }
 
 ;// ./src/main/js/components/dropdowns/templates.js
+
+
 
 
 const hideOnPopperBlur = {
@@ -84,37 +98,188 @@ function dropdown() {
     }
   };
 }
-function menuItem(options) {
+function kebabToCamelCase(str) {
+  return str.replace(/-([a-z])/g, function (match, char) {
+    return char.toUpperCase();
+  });
+}
+function loadScriptIfNotLoaded(url, item) {
+  // Check if the script element with the given URL already exists
+  const existingScript = document.querySelector(`script[src="${url}"]`);
+  if (!existingScript) {
+    const script = document.createElement("script");
+    script.src = url;
+    script.addEventListener("load", () => {
+      behavior_shim.applySubtree(item, true);
+    });
+    document.body.appendChild(script);
+  }
+}
+function optionalVal(key, val) {
+  if (!val) {
+    return "";
+  }
+  return `${key}="${xmlEscape(val)}"`;
+}
+function optionalVals(keyVals) {
+  return Object.keys(keyVals).map(key => optionalVal(key, keyVals[key])).join(" ");
+}
+function icon(opt) {
+  if (!opt.icon) {
+    return "";
+  }
+  return `<div class="jenkins-dropdown__item__icon">${opt.iconXml ? opt.iconXml : `<img alt="Icon" aria-hidden="true" src="${opt.icon}" />`}</div>`;
+}
+function badge(opt) {
+  if (!opt.badge) {
+    return "";
+  }
+  let badgeText = xmlEscape(opt.badge.text);
+  let badgeTooltip = xmlEscape(opt.badge.tooltip);
+  let badgeSeverity = xmlEscape(opt.badge.severity);
+  return `<span class="jenkins-dropdown__item__badge jenkins-badge jenkins-!-${badgeSeverity}-color" tooltip="${badgeTooltip}">${badgeText}</span>`;
+}
+
+/**
+ * Generates the contents for the dropdown
+ * @param {DropdownItem}  dropdownItem
+ * @param {'jenkins-dropdown__item' | 'jenkins-button'}  type
+ * @param {string}  context
+ * @return {Element}
+ */
+function menuItem(dropdownItem, type = "jenkins-dropdown__item", context = "") {
+  /**
+   * @type {DropdownItem}
+   */
   const itemOptions = Object.assign({
     type: "link"
-  }, options);
-  const label = xmlEscape(itemOptions.label);
-  let badgeText;
-  let badgeTooltip;
-  let badgeSeverity;
-  if (itemOptions.badge) {
-    badgeText = xmlEscape(itemOptions.badge.text);
-    badgeTooltip = xmlEscape(itemOptions.badge.tooltip);
-    badgeSeverity = xmlEscape(itemOptions.badge.severity);
+  }, dropdownItem);
+  const label = xmlEscape(itemOptions.displayName);
+  const description = itemOptions.description ? `<span class="jenkins-dropdown__item__description">${xmlEscape(itemOptions.description)}</span>` : "";
+  const clazz = [type, itemOptions.clazz, itemOptions.semantic ? " jenkins-!-" + itemOptions.semantic.toLowerCase() + "-color" : null].filter(Boolean).join(" ");
+
+  // If submenu
+  if (itemOptions.event && itemOptions.event.event) {
+    const wrapper = createElementFromHtml(`<div class="jenkins-split-button"></div>`);
+    wrapper.appendChild(menuItem(Object.assign({}, dropdownItem, {
+      event: dropdownItem.event.event
+    }), "jenkins-button", context));
+    const button = createElementFromHtml(`<button type="button" class="${clazz}"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="48" d="M112 184l144 144 144-144"/></svg></button>`);
+    utils.generateDropdown(button, instance => {
+      instance.setContent(utils.generateDropdownItems(dropdownItem.subMenu.items));
+      instance.loaded = true;
+    }, false, {
+      appendTo: "parent"
+    });
+    wrapper.appendChild(button);
+    return wrapper;
   }
-  const tag = itemOptions.type === "link" ? "a" : "button";
+  const tag = itemOptions.event && itemOptions.event.type === "GET" ? "a" : "button";
+
+  // Do not prepend the context path for root-relative or absolute URLs
+  if (tag === "a") {
+    if (itemOptions.event.url.startsWith("/") || itemOptions.event.url.startsWith("http")) {
+      context = "";
+    }
+  }
+  const url = tag === "a" ? context + xmlEscape(itemOptions.event.url) : null;
   const item = createElementFromHtml(`
-      <${tag} class="jenkins-dropdown__item ${itemOptions.clazz ? xmlEscape(itemOptions.clazz) : ""}"
-        ${itemOptions.url ? `href="${xmlEscape(itemOptions.url)}"` : ""} ${itemOptions.id ? `id="${xmlEscape(itemOptions.id)}"` : ""}
-        ${itemOptions.tooltip ? `data-html-tooltip="${xmlEscape(itemOptions.tooltip)}"` : ""}>
-          ${itemOptions.icon ? `<div class="jenkins-dropdown__item__icon">${itemOptions.iconXml ? itemOptions.iconXml : `<img alt="${label}" src="${itemOptions.icon}" />`}</div>` : ``}
+      <${tag}
+        ${optionalVals({
+    class: clazz,
+    href: url,
+    id: itemOptions.id,
+    "data-html-tooltip": itemOptions.tooltip,
+    type: tag === "button" ? "button" : null
+  })}>
+          ${icon(itemOptions)}
           ${label}
-                    ${itemOptions.badge != null ? `<span class="jenkins-dropdown__item__badge jenkins-badge jenkins-!-${badgeSeverity}-color" tooltip="${badgeTooltip}">${badgeText}</span>` : ``}
-          ${itemOptions.subMenu != null ? `<span class="jenkins-dropdown__item__chevron"></span>` : ``}
+          ${description}
+          ${badge(itemOptions)}
+          ${itemOptions.event && itemOptions.event.actions && type === "jenkins-dropdown__item" ? `<span class="jenkins-dropdown__item__chevron"></span>` : ``}
       </${tag}>
     `);
-  if (options.onClick) {
-    item.addEventListener("click", event => options.onClick(event));
-  }
-  if (options.onKeyPress) {
-    item.onkeypress = options.onKeyPress;
-  }
+
+  // Handle special cases
+  tryOnClickEvent(item, dropdownItem);
+  tryLoadScripts(item, dropdownItem, context);
+  tryPost(item, dropdownItem, context);
+  tryConfirmationPost(item, dropdownItem, context);
   return item;
+}
+
+/**
+ * If the menu item has a custom onClick event, add it to the element
+ */
+function tryOnClickEvent(element, opt) {
+  if (!opt.onClick) {
+    return;
+  }
+  element.addEventListener("click", opt.onClick);
+}
+
+/**
+ * If scripts have been provided with the menu item, load them
+ */
+function tryLoadScripts(element, opt, context) {
+  if (!opt.event || !opt.event.attributes || !opt.event.javascriptUrl) {
+    return;
+  }
+  for (const key in opt.event.attributes) {
+    element.dataset[kebabToCamelCase(key)] = opt.event.attributes[key].toString();
+  }
+  element.dataset.baseUrl = context;
+
+  // Dialog URLs should open relative to the context path, not the base URL
+  element.dataset.dialogUrl = context + element.dataset.dialogUrl;
+  loadScriptIfNotLoaded(opt.event.javascriptUrl, element);
+}
+
+/**
+ * If the menu item requires a POST, add a confirmation dialog and submit the form
+ */
+function tryConfirmationPost(element, opt, context) {
+  if (!opt.event || !opt.event.postTo) {
+    return;
+  }
+  element.addEventListener("click", () => {
+    dialog.confirm(opt.event.title, {
+      message: opt.event.description,
+      type: opt.semantic?.toLowerCase() ?? "default"
+    }).then(() => {
+      const form = document.createElement("form");
+      form.setAttribute("method", "POST");
+      if (opt.event.postTo.startsWith("/")) {
+        form.setAttribute("action", xmlEscape(opt.event.postTo));
+      } else {
+        form.setAttribute("action", context + xmlEscape(opt.event.postTo));
+      }
+      crumb.appendToForm(form);
+      document.body.appendChild(form);
+      form.submit();
+    }, () => {});
+  });
+}
+
+/**
+ * If the menu item requires a POST, do a POST rather than a GET
+ */
+function tryPost(element, opt, context) {
+  if (!opt.event || !opt.event.url || opt.event.type !== "POST") {
+    return;
+  }
+
+  // Do not prepend the context path for root-relative URLs
+  if (opt.event.url.startsWith("/")) {
+    context = "";
+  }
+  element.addEventListener("click", () => {
+    fetch(context + xmlEscape(opt.event.url), {
+      method: "post",
+      headers: crumb.wrap({})
+    });
+    window.location.href = ".";
+  });
 }
 function heading(label) {
   return createElementFromHtml(`<p class="jenkins-dropdown__heading">${label}</p>`);
@@ -207,32 +372,18 @@ function makeKeyboardNavigable(container, itemsFunc, selectedClass, additionalBe
 }
 function scrollAndSelect(selectedItem, selectedClass, items) {
   if (selectedItem) {
-    if (!isInViewport(selectedItem)) {
-      selectedItem.scrollIntoView(false);
-    }
+    selectedItem.scrollIntoView({
+      block: "nearest",
+      behavior: "smooth"
+    });
     selectedItem.classList.add(selectedClass);
     if (items.includes(document.activeElement)) {
       selectedItem.focus();
     }
   }
 }
-function isInViewport(element) {
-  const rect = element.getBoundingClientRect();
-  return rect.top >= 0 && rect.left >= 0 && rect.bottom <= window.innerHeight && rect.right <= window.innerWidth;
-}
-// EXTERNAL MODULE: ./node_modules/tippy.js/dist/tippy.esm.js + 16 modules
-var tippy_esm = __webpack_require__(7381);
-;// ./src/main/js/util/behavior-shim.js
-function specify(selector, id, priority, behavior) {
-  Behaviour.specify(selector, id, priority, behavior);
-}
-function applySubtree(startNode, includeSelf) {
-  Behaviour.applySubtree(startNode, includeSelf);
-}
-/* harmony default export */ var behavior_shim = ({
-  specify,
-  applySubtree
-});
+// EXTERNAL MODULE: ./node_modules/tippy.js/dist/tippy.esm.js + 1 modules
+var tippy_esm = __webpack_require__(4313);
 ;// ./src/main/js/components/dropdowns/utils.js
 
 
@@ -250,7 +401,7 @@ function generateDropdown(element, callback, immediate, options = {}) {
   if (element._tippy && element._tippy.props.theme === "dropdown") {
     element._tippy.destroy();
   }
-  (0,tippy_esm/* default */.Ay)(element, Object.assign({}, templates.dropdown(), {
+  ;(0,tippy_esm/* default */.Ay)(element, Object.assign({}, templates.dropdown(), {
     onCreate(instance) {
       const onload = () => {
         if (instance.loaded) {
@@ -289,10 +440,13 @@ function generateDropdown(element, callback, immediate, options = {}) {
   }, options));
 }
 
-/*
+/**
  * Generates the contents for the dropdown
+ * @param {DropdownItem[]}  items
+ * @param {boolean}  compact
+ * @param {string}  context
  */
-function generateDropdownItems(items, compact) {
+function generateDropdownItems(items, compact = false, context = "") {
   const menuItems = document.createElement("div");
   menuItems.classList.add("jenkins-dropdown");
   if (compact === true) {
@@ -303,18 +457,18 @@ function generateDropdownItems(items, compact) {
       return item.contents;
     }
     if (item.type === "HEADER") {
-      return templates.heading(item.label);
+      return templates.heading(item.displayName);
     }
     if (item.type === "SEPARATOR") {
       return templates.separator();
     }
     if (item.type === "DISABLED") {
-      return templates.disabled(item.label);
+      return templates.disabled(item.displayName);
     }
-    const menuItem = templates.menuItem(item);
-    if (item.subMenu != null) {
+    const menuItem = templates.menuItem(item, "jenkins-dropdown__item", context);
+    if (item.event && item.event.actions != null) {
       (0,tippy_esm/* default */.Ay)(menuItem, Object.assign({}, templates.dropdown(), {
-        content: generateDropdownItems(item.subMenu()),
+        content: generateDropdownItems(item.subMenu.items),
         trigger: "mouseenter",
         placement: "right-start",
         offset: [-8, 0]
@@ -364,67 +518,6 @@ function generateDropdownItems(items, compact) {
   behavior_shim.applySubtree(menuItems);
   return menuItems;
 }
-function convertHtmlToItems(children) {
-  const items = [];
-  Array.from(children).forEach(child => {
-    const attributes = child.dataset;
-    const type = child.dataset.dropdownType;
-    switch (type) {
-      case "ITEM":
-        {
-          const item = {
-            label: attributes.dropdownText,
-            id: attributes.dropdownId,
-            icon: attributes.dropdownIcon,
-            iconXml: attributes.dropdownIcon,
-            clazz: attributes.dropdownClazz
-          };
-          if (attributes.dropdownHref) {
-            item.url = attributes.dropdownHref;
-            item.type = "link";
-          } else {
-            item.type = "button";
-          }
-          if (attributes.dropdownBadgeSeverity) {
-            item.badge = {
-              text: attributes.dropdownBadgeText,
-              tooltip: attributes.dropdownBadgeTooltip,
-              severity: attributes.dropdownBadgeSeverity
-            };
-          }
-          items.push(item);
-          break;
-        }
-      case "SUBMENU":
-        items.push({
-          type: "ITEM",
-          label: attributes.dropdownText,
-          icon: attributes.dropdownIcon,
-          iconXml: attributes.dropdownIcon,
-          subMenu: () => convertHtmlToItems(child.content.children)
-        });
-        break;
-      case "SEPARATOR":
-        items.push({
-          type: type
-        });
-        break;
-      case "HEADER":
-        items.push({
-          type: type,
-          label: attributes.dropdownText
-        });
-        break;
-      case "CUSTOM":
-        items.push({
-          type: type,
-          contents: child.content.cloneNode(true)
-        });
-        break;
-    }
-  });
-  return items;
-}
 function validateDropdown(e) {
   if (e.targetUrl) {
     const method = e.getAttribute("checkMethod") || "post";
@@ -450,13 +543,145 @@ function debounce(callback) {
     }
   };
 }
+
+/**
+ * Generates the contents for the dropdown
+ * @param {DropdownItem[]}  items
+ * @return {DropdownItem[]}
+ */
+function mapChildrenItemsToDropdownItems(items) {
+  /** @type {number | null} */
+  let initialGroup = null;
+  return items.flatMap(item => {
+    if (item.type === "HEADER") {
+      return {
+        type: "HEADER",
+        displayName: item.displayName
+      };
+    }
+    if (item.type === "SEPARATOR") {
+      return {
+        type: "SEPARATOR"
+      };
+    }
+    const response = [];
+    if (initialGroup != null && item.group?.order !== initialGroup && item.group.order > 2) {
+      response.push({
+        type: "SEPARATOR"
+      });
+    }
+    initialGroup = item.group?.order;
+    response.push(item);
+    return response;
+  });
+}
+
+/**
+ * @param {HTMLElement[]} children
+ * @return {DropdownItem[]}
+ */
+function convertHtmlToItems(children) {
+  return Array.from(children).map(child => {
+    const attributes = child.dataset;
+
+    /** @type {DropdownItemType} */
+    const type = child.dataset.dropdownType;
+    switch (type) {
+      case "ITEM":
+        {
+          /** @type {MenuItemDropdownItem} */
+          const item = {
+            type: "ITEM",
+            displayName: attributes.dropdownText,
+            id: attributes.dropdownId,
+            icon: attributes.dropdownIcon,
+            iconXml: attributes.dropdownIcon,
+            clazz: attributes.dropdownClazz,
+            semantic: attributes.dropdownSemantic
+          };
+          if (attributes.dropdownConfirmationTitle) {
+            item.event = {
+              title: attributes.dropdownConfirmationTitle,
+              description: attributes.dropdownConfirmationDescription,
+              postTo: attributes.dropdownConfirmationUrl
+            };
+          }
+          if (attributes.dropdownHref) {
+            item.event = {
+              url: attributes.dropdownHref,
+              type: "GET"
+            };
+          }
+          return item;
+        }
+      case "SUBMENU":
+        /** @type {MenuItemDropdownItem} */
+        return {
+          type: "ITEM",
+          displayName: attributes.dropdownText,
+          icon: attributes.dropdownIcon,
+          iconXml: attributes.dropdownIcon,
+          event: {
+            actions: []
+          },
+          subMenu: {
+            items: convertHtmlToItems(child.content.children)
+          }
+        };
+      case "SEPARATOR":
+        return {
+          type: type
+        };
+      case "HEADER":
+        return {
+          type: type,
+          displayName: attributes.dropdownText
+        };
+      case "CUSTOM":
+        return {
+          type: type,
+          contents: child.content.cloneNode(true)
+        };
+    }
+  });
+}
 /* harmony default export */ var utils = ({
-  convertHtmlToItems,
   generateDropdown,
   generateDropdownItems,
   validateDropdown,
   getMaxSuggestionCount,
-  debounce
+  debounce,
+  mapChildrenItemsToDropdownItems,
+  convertHtmlToItems
+});
+;// ./src/main/js/components/app-bar/index.js
+
+
+
+
+/**
+ * Generates inline actions and an overflow menu if necessary.
+ */
+function init() {
+  behavior_shim.specify("[data-type='auto-overflow']", "-dropdowns-", 1000, element => {
+    const template = JSON.parse(element.nextSibling.content.textContent);
+    const topLevelActions = utils.mapChildrenItemsToDropdownItems(template.items);
+
+    // Append top-level items next to the overflow menu
+    topLevelActions.forEach((item, index) => {
+      // Only the first button in an app bar should have an icon
+      if (index > 0) {
+        item.icon = null;
+        item.iconXml = null;
+      }
+      const button = templates.menuItem(item, "jenkins-button", template.url);
+      element.parentNode.insertBefore(button, element);
+      behavior_shim.applySubtree(button, true);
+    });
+  });
+}
+/* harmony default export */ var app_bar = ({
+  init
 });
 ;// ./src/main/js/util/path.js
 function combinePath(pathOne, pathTwo) {
@@ -484,7 +709,7 @@ function combinePath(pathOne, pathTwo) {
 
 
 
-function init() {
+function jumplists_init() {
   generateJumplistAccessors();
   generateDropdowns();
 }
@@ -532,7 +757,13 @@ function generateDropdowns() {
       instance.setContent(utils.generateDropdownItems(element.items));
       return;
     }
-    fetch(path.combinePath(href, jumplistType)).then(response => response.json()).then(json => instance.setContent(utils.generateDropdownItems(mapChildrenItemsToDropdownItems(json.items)))).catch(error => console.log(`Jumplist request failed: ${error}`)).finally(() => instance.loaded = true);
+
+    // If requested, only return menu actions rather than top-level app bar actions
+    let query = "";
+    if (element.dataset.jumplistType === "menu") {
+      query = "?menu-only=true";
+    }
+    fetch(path.combinePath(href, jumplistType) + query).then(response => response.json()).then(json => instance.setContent(utils.generateDropdownItems(utils.mapChildrenItemsToDropdownItems(json.items), false, href))).catch(error => console.error(`Jumplist request failed:`, error)).finally(() => instance.loaded = true);
   }));
 }
 function createDropdownContent(element, hasModelLink, hasChildrenLink, href) {
@@ -547,8 +778,8 @@ function createDropdownContent(element, hasModelLink, hasChildrenLink, href) {
     };
     const fetchSection = function (urlSuffix) {
       return fetch(path.combinePath(href, urlSuffix)).then(response => response.json()).then(json => {
-        const items = utils.generateDropdownItems(mapChildrenItemsToDropdownItems(json.items));
-        return items;
+        const items = utils.mapChildrenItemsToDropdownItems(json.items);
+        return utils.generateDropdownItems(items, false, element.dataset.href);
       });
     };
     const promises = [];
@@ -584,73 +815,14 @@ function createDropdownContent(element, hasModelLink, hasChildrenLink, href) {
       }
       instance.setContent(container);
     }).catch(error => {
-      console.log(`Dropdown fetch failed: ${error}`);
+      console.log(`Dropdown fetch failed`, error);
     }).finally(() => {
       instance.loaded = true;
     });
   };
 }
-
-/*
- * Generates the contents for the dropdown
- */
-function mapChildrenItemsToDropdownItems(items) {
-  return items.map(item => {
-    if (item.type === "HEADER") {
-      return {
-        type: "HEADER",
-        label: item.displayName
-      };
-    }
-    if (item.type === "SEPARATOR") {
-      return {
-        type: "SEPARATOR"
-      };
-    }
-    return {
-      icon: item.icon,
-      iconXml: item.iconXml,
-      label: item.displayName,
-      url: item.url,
-      type: item.post || item.requiresConfirmation ? "button" : "link",
-      badge: item.badge,
-      onClick: () => {
-        if (item.post || item.requiresConfirmation) {
-          if (item.requiresConfirmation) {
-            dialog.confirm(item.displayName, {
-              message: item.message
-            }).then(() => {
-              const form = document.createElement("form");
-              form.setAttribute("method", item.post ? "POST" : "GET");
-              form.setAttribute("action", item.url);
-              if (item.post) {
-                crumb.appendToForm(form);
-              }
-              document.body.appendChild(form);
-              form.submit();
-            });
-          } else {
-            fetch(item.url, {
-              method: "post",
-              headers: crumb.wrap({})
-            }).then(rsp => {
-              if (rsp.ok) {
-                notificationBar.show(item.displayName + ": Done.", notificationBar.SUCCESS);
-              } else {
-                notificationBar.show(item.displayName + ": Failed.", notificationBar.ERROR);
-              }
-            });
-          }
-        }
-      },
-      subMenu: item.subMenu ? () => {
-        return mapChildrenItemsToDropdownItems(item.subMenu.items);
-      } : null
-    };
-  });
-}
 /* harmony default export */ var jumplists = ({
-  init
+  init: jumplists_init
 });
 ;// ./src/main/js/components/dropdowns/inpage-jumplist.js
 
@@ -667,8 +839,11 @@ function inpage_jumplist_init() {
       inpageNavigationBreadcrumb.items = Array.from(element.querySelectorAll("& > div > .jenkins-section > .jenkins-section__title")).map(section => {
         section.id = toId(section.textContent);
         return {
-          label: section.textContent,
-          url: "#" + section.id
+          displayName: section.textContent,
+          event: {
+            url: "#" + section.id,
+            type: "GET"
+          }
         };
       });
     });
@@ -705,8 +880,8 @@ const SUCCESS = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><
 const WARNING = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M449.07 399.08L278.64 82.58c-12.08-22.44-44.26-22.44-56.35 0L51.87 399.08A32 32 0 0080 446.25h340.89a32 32 0 0028.18-47.17zm-198.6-1.83a20 20 0 1120-20 20 20 0 01-20 20zm21.72-201.15l-5.74 122a16 16 0 01-32 0l-5.74-121.95a21.73 21.73 0 0121.5-22.69h.21a21.74 21.74 0 0121.73 22.7z" fill='currentColor'/></svg>`;
 const ERROR = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M256 48C141.31 48 48 141.31 48 256s93.31 208 208 208 208-93.31 208-208S370.69 48 256 48zm0 319.91a20 20 0 1120-20 20 20 0 01-20 20zm21.72-201.15l-5.74 122a16 16 0 01-32 0l-5.74-121.94v-.05a21.74 21.74 0 1143.44 0z" fill='currentColor'/></svg>`;
 const CLOSE = `<svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32" d="M368 368L144 144M368 144L144 368"/></svg>`;
-const CHEVRON_DOWN = `<svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512"><title>Chevron Down</title><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="48" d="M112 184l144 144 144-144"/></svg>`;
 const FUNNEL = `<svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512"><path d="M35.4 87.12l168.65 196.44A16.07 16.07 0 01208 294v119.32a7.93 7.93 0 005.39 7.59l80.15 26.67A7.94 7.94 0 00304 440V294a16.07 16.07 0 014-10.44L476.6 87.12A14 14 0 00466 64H46.05A14 14 0 0035.4 87.12z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32"/></svg>`;
+const PLUS = `<svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32" d="M256 112v288M400 256H112"/></svg>`;
 ;// ./src/main/js/components/dropdowns/hetero-list.js
 
 
@@ -734,12 +909,12 @@ function convertInputsToButtons(e) {
     let btn = document.createElement("button");
     btn.setAttribute("type", "button");
     btn.classList.add("hetero-list-add", "jenkins-button");
-    btn.innerText = oldbtn.getAttribute("value");
+    let plus = createElementFromHtml(PLUS);
+    btn.appendChild(plus);
+    btn.appendChild(document.createTextNode(oldbtn.getAttribute("value")));
     if (oldbtn.hasAttribute("suffix")) {
       btn.setAttribute("suffix", oldbtn.getAttribute("suffix"));
     }
-    let chevron = createElementFromHtml(CHEVRON_DOWN);
-    btn.appendChild(chevron);
     oldbtn.parentNode.appendChild(btn);
     oldbtn.remove();
   });
@@ -852,14 +1027,17 @@ function generateButtons() {
      */
     function toggleButtonState() {
       const templateCount = templates.length;
-      const selectedCount = Array.from(e.children).filter(e => e.classList.contains("repeated-chunk")).length;
+      const selectedCount = Array.from(e.children).filter(e => e.classList.contains("repeated-chunk") && !e.classList.contains("fade-out")).length;
       btn.disabled = oneEach && selectedCount >= templateCount;
     }
     const observer = new MutationObserver(() => {
       toggleButtonState();
     });
     observer.observe(e, {
-      childList: true
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["class"]
     });
     toggleButtonState();
     generateDropDown(btn, instance => {
@@ -869,7 +1047,7 @@ function generateButtons() {
         let disabled = oneEach && has(n.descriptorId);
         let type = disabled ? "DISABLED" : "button";
         let item = {
-          label: n.title,
+          displayName: n.title,
           onClick: event => {
             event.preventDefault();
             event.stopPropagation();
@@ -917,7 +1095,7 @@ function applyFilterKeyword(menu, filterInput) {
   }
 }
 function generateDropDown(button, callback) {
-  (0,tippy_esm/* default */.Ay)(button, Object.assign({}, templates.dropdown(), {
+  ;(0,tippy_esm/* default */.Ay)(button, Object.assign({}, templates.dropdown(), {
     appendTo: undefined,
     onCreate(instance) {
       if (instance.loaded) {
@@ -926,7 +1104,7 @@ function generateDropDown(button, callback) {
       instance.popper.addEventListener("click", () => {
         instance.hide();
       });
-      instance.popper.addEventListener("keydown", () => {
+      instance.popper.addEventListener("keydown", event => {
         if (event.key === "Escape") {
           instance.hide();
         }
@@ -955,7 +1133,7 @@ function combo_box_init() {
       e.focus();
     };
     return {
-      label: suggestion.name,
+      displayName: suggestion.name,
       onClick: confirm,
       onKeyPress: evt => {
         if (evt.key === "Tab") {
@@ -966,17 +1144,21 @@ function combo_box_init() {
       }
     };
   }
-  function createAndShowDropdown(e, div, suggestions) {
+  function createAndShowDropdown(e, suggestions) {
     const items = suggestions.splice(0, utils.getMaxSuggestionCount(e, 20)).map(s => convertSuggestionToItem(s, e));
     if (!e.dropdown) {
-      utils.generateDropdown(div, instance => {
+      utils.generateDropdown(e, instance => {
         e.dropdown = instance;
-      }, true);
+      }, true, {
+        trigger: "manual",
+        hideOnClick: false,
+        appendTo: ref => ref.closest("dialog") || document.body
+      });
     }
     e.dropdown.setContent(utils.generateDropdownItems(items, true));
     e.dropdown.show();
   }
-  function updateSuggestions(e, div, items) {
+  function updateSuggestions(e, items) {
     const text = e.value.trim();
     let filteredItems = text ? items.filter(item => item.indexOf(text) === 0) : items;
     const suggestions = filteredItems.filter(item => item.indexOf(text) === 0).map(item => {
@@ -984,14 +1166,12 @@ function combo_box_init() {
         name: item
       };
     });
-    createAndShowDropdown(e, div, suggestions || []);
+    createAndShowDropdown(e, suggestions || []);
   }
   behavior_shim.specify("INPUT.combobox2", "combobox", 100, function (e) {
     // form field with auto-completion support
     // insert the auto-completion container
     refillOnChange(e, function (params) {
-      const div = document.createElement("DIV");
-      e.parentNode.insertBefore(div, e.nextElementSibling);
       e.style.position = "relative";
       const url = e.getAttribute("fillUrl");
       fetch(url, {
@@ -1000,14 +1180,36 @@ function combo_box_init() {
         }),
         method: "post",
         body: new URLSearchParams(params)
-      }).then(rsp => rsp.ok ? rsp.json() : {}).then(items => {
-        e.addEventListener("focus", () => updateSuggestions(e, div, items));
+      }).then(rsp => rsp.ok ? rsp.json() : []).then(items => {
+        // Keep the latest suggestions on the element. refillOnChange runs
+        // this callback once on initial load and again on every change of a
+        // fillDependsOn dependency, so the listeners below read from here
+        // rather than capturing a stale `items` in their closures. Coerce to
+        // an array so a failed request (resolved to [] above) or an
+        // unexpected response shape can never make updateSuggestions throw on
+        // items.filter(...).
+        e.suggestions = Array.isArray(items) ? items : [];
+
+        // Register the focus/focusout/input listeners exactly once. Without
+        // this guard every refill would attach another set of handlers,
+        // stacking duplicates that fire repeatedly (and over stale data) as
+        // dependencies change.
+        if (e.comboboxListenersAttached) {
+          return;
+        }
+        e.comboboxListenersAttached = true;
+        e.addEventListener("focus", () => updateSuggestions(e, e.suggestions));
 
         // otherwise menu won't hide on tab with nothing selected
         // needs delay as without that it blocks click selection of an item
-        e.addEventListener("focusout", () => setTimeout(() => e.dropdown.hide(), 200));
+        e.addEventListener("focusout", event => {
+          if (event.relatedTarget && e.dropdown && e.dropdown.popper.contains(event.relatedTarget)) {
+            return;
+          }
+          setTimeout(() => e.dropdown && e.dropdown.hide(), 200);
+        });
         e.addEventListener("input", utils.debounce(() => {
-          updateSuggestions(e, div, items);
+          updateSuggestions(e, e.suggestions);
         }));
       });
     });
@@ -1032,7 +1234,7 @@ function autocomplete_init() {
       e.focus();
     };
     return {
-      label: suggestion.name,
+      displayName: suggestion.name,
       onClick: confirm,
       onKeyPress: evt => {
         if (evt.key === "Tab") {
@@ -1049,7 +1251,9 @@ function autocomplete_init() {
       utils.generateDropdown(e, instance => {
         e.dropdown = instance;
         instance.popper.style.minWidth = e.offsetWidth + "px";
-      }, true);
+      }, true, {
+        appendTo: ref => ref.closest("dialog") || document.body
+      });
     }
     e.dropdown.setContent(utils.generateDropdownItems(items, true));
     e.dropdown.show();
@@ -1089,7 +1293,12 @@ function autocomplete_init() {
     e.style.position = "relative";
     // otherwise menu won't hide on tab with nothing selected
     // needs delay as without that it blocks click selection of an item
-    e.addEventListener("focusout", () => setTimeout(() => e.dropdown && e.dropdown.hide(), 200));
+    e.addEventListener("focusout", event => {
+      if (event.relatedTarget && e.dropdown && e.dropdown.popper.contains(event.relatedTarget)) {
+        return;
+      }
+      setTimeout(() => e.dropdown && e.dropdown.hide(), 200);
+    });
     e.addEventListener("input", utils.debounce(() => {
       updateSuggestions(e);
     }));
@@ -1350,15 +1559,15 @@ function notifications_init() {
     defaultIcon: INFO,
     defaultAlertClass: "jenkins-notification",
     SUCCESS: {
-      alertClass: "jenkins-notification jenkins-notification--success",
+      alertClass: "jenkins-notification jenkins-!-success-color",
       icon: SUCCESS
     },
     WARNING: {
-      alertClass: "jenkins-notification jenkins-notification--warning",
+      alertClass: "jenkins-notification jenkins-!-warning-color",
       icon: WARNING
     },
     ERROR: {
-      alertClass: "jenkins-notification jenkins-notification--error",
+      alertClass: "jenkins-notification jenkins-!-error-color",
       icon: ERROR,
       sticky: true
     },
@@ -1618,16 +1827,21 @@ function registerConfirmationLink(element) {
   const message = element.getAttribute("data-message");
   const title = element.getAttribute("data-title");
   const destructive = element.getAttribute("data-destructive");
+  const okText = element.getAttribute("data-ok-text");
   let type = "default";
   if (destructive === "true") {
     type = "destructive";
   }
   element.addEventListener("click", function (e) {
     e.preventDefault();
-    dialog.confirm(title, {
+    const options = {
       message: message,
       type: type
-    }).then(() => {
+    };
+    if (okText) {
+      options.okText = okText;
+    }
+    dialog.confirm(title, options).then(() => {
       var form = document.createElement("form");
       form.setAttribute("method", post ? "POST" : "GET");
       form.setAttribute("action", href);
@@ -1648,9 +1862,8 @@ function confirmation_link_init() {
 /* harmony default export */ var confirmation_link = ({
   init: confirmation_link_init
 });
-// EXTERNAL MODULE: ./node_modules/jquery/dist/jquery.js
-var jquery = __webpack_require__(4692);
-var jquery_default = /*#__PURE__*/__webpack_require__.n(jquery);
+// EXTERNAL MODULE: ./node_modules/jquery/dist-module/jquery.module.js
+var jquery_module = __webpack_require__(8842);
 // EXTERNAL MODULE: ./node_modules/window-handle/index.js
 var window_handle = __webpack_require__(7450);
 // EXTERNAL MODULE: ./node_modules/handlebars/runtime.js
@@ -1694,9 +1907,9 @@ jenkins.get = function (url, success, options) {
     success: success
   };
   if (options instanceof Object) {
-    jquery_default().extend(args, options);
+    jquery_module/* default */.A.extend(args, options);
   }
-  jquery_default().ajax(args);
+  jquery_module/* default */.A.ajax(args);
 };
 
 /**
@@ -1723,7 +1936,7 @@ jenkins.post = function (url, data, success, options) {
   var formBody = data;
   if (formBody instanceof Object) {
     if (crumb) {
-      formBody = jquery_default().extend({}, formBody);
+      formBody = jquery_module/* default */.A.extend({}, formBody);
       formBody[crumb.fieldName] = crumb.value;
     }
     formBody = JSON.stringify(formBody);
@@ -1739,9 +1952,9 @@ jenkins.post = function (url, data, success, options) {
     headers: headers
   };
   if (options instanceof Object) {
-    jquery_default().extend(args, options);
+    jquery_module/* default */.A.extend(args, options);
   }
-  jquery_default().ajax(args);
+  jquery_module/* default */.A.ajax(args);
 };
 
 /**
@@ -1827,11 +2040,11 @@ jenkins.testConnectivity = function (siteId, handler) {
  * gets the window containing a form, taking in to account top-level iframes
  */
 jenkins.getWindow = function ($form) {
-  $form = jquery_default()($form);
+  $form = (0,jquery_module/* default */.A)($form);
   var wnd = window_handle.getWindow();
-  jquery_default()(top.document).find("iframe").each(function () {
+  (0,jquery_module/* default */.A)(top.document).find("iframe").each(function () {
     var windowFrame = this.contentWindow;
-    var $f = jquery_default()(this).contents().find("form");
+    var $f = (0,jquery_module/* default */.A)(this).contents().find("form");
     $f.each(function () {
       if ($form[0] === this) {
         wnd = windowFrame;
@@ -1845,11 +2058,11 @@ jenkins.getWindow = function ($form) {
  * Builds a stapler form post
  */
 jenkins.buildFormPost = function ($form) {
-  $form = jquery_default()($form);
+  $form = (0,jquery_module/* default */.A)($form);
   var wnd = jenkins.getWindow($form);
   var form = $form[0];
   if (wnd.buildFormTree(form)) {
-    return $form.serialize() + "&" + jquery_default().param({
+    return $form.serialize() + "&" + jquery_module/* default */.A.param({
       "core:apply": "",
       Submit: "Save",
       json: $form.find("input[name=json]").val()
@@ -1862,7 +2075,7 @@ jenkins.buildFormPost = function ($form) {
  * Gets the crumb, if crumbs are enabled
  */
 jenkins.getFormCrumb = function ($form) {
-  $form = jquery_default()($form);
+  $form = (0,jquery_module/* default */.A)($form);
   var wnd = jenkins.getWindow($form);
   return wnd.crumb;
 };
@@ -1872,10 +2085,10 @@ jenkins.getFormCrumb = function ($form) {
  * If last parameter is an object, will be extended to jQuery options (e.g. pass { error: function() ... } to handle errors)
  */
 jenkins.staplerPost = function (url, $form, success, options) {
-  $form = jquery_default()($form);
+  $form = (0,jquery_module/* default */.A)($form);
   var postBody = jenkins.buildFormPost($form);
   var crumb = jenkins.getFormCrumb($form);
-  jenkins.post(url, postBody, success, jquery_default().extend({
+  jenkins.post(url, postBody, success, jquery_module/* default */.A.extend({
     processData: false,
     contentType: "application/x-www-form-urlencoded",
     crumb: crumb
@@ -1896,7 +2109,8 @@ let _defaults = {
   type: "default",
   hideCloseButton: false,
   allowEmpty: false,
-  submitButton: false
+  submitButton: false,
+  preventCloseOnOutsideClick: false
 };
 let _typeClassMap = {
   default: "",
@@ -1918,61 +2132,61 @@ Dialog.prototype.init = function () {
   this.dialog.style.maxWidth = this.options.maxWidth;
   this.dialog.style.minWidth = this.options.minWidth;
   document.body.appendChild(this.dialog);
-  if (this.options.title != null) {
-    const title = createElementFromHtml(`<div class='jenkins-dialog__title'/>`);
-    this.dialog.appendChild(title);
-    title.innerText = this.options.title;
-  }
+
+  // Append title element
+  const title = createElementFromHtml(`<div class='jenkins-dialog__title'><span></span></div>`);
+  this.dialog.appendChild(title);
+  title.querySelector("span").innerText = this.options.title;
+  const content = createElementFromHtml(`<div class='jenkins-dialog__contents'/>`);
   if (this.dialogType === "modal") {
     if (this.options.content != null) {
-      const content = createElementFromHtml(`<div class='jenkins-dialog__contents jenkins-dialog__contents--modal'/>`);
       content.appendChild(this.options.content);
-      this.dialog.appendChild(content);
     }
     if (this.options.hideCloseButton !== true) {
       const closeButton = createElementFromHtml(`
-          <button class="jenkins-dialog__close-button jenkins-button">
+          <button class="jenkins-dialog__title__button jenkins-dialog__title__close-button jenkins-button">
             <span class="jenkins-visually-hidden">Close</span>
             ${CLOSE}
           </button>
         `);
-      this.dialog.appendChild(closeButton);
+      title.append(closeButton);
       closeButton.addEventListener("click", () => this.dialog.dispatchEvent(new Event("cancel")));
     }
-    this.dialog.addEventListener("click", function (e) {
-      if (e.target !== e.currentTarget) {
-        return;
-      }
-      this.dispatchEvent(new Event("cancel"));
-    });
+    if (!this.options.preventCloseOnOutsideClick) {
+      this.dialog.addEventListener("click", function (e) {
+        if (e.target !== e.currentTarget) {
+          return;
+        }
+        this.dispatchEvent(new Event("cancel"));
+      });
+    }
     this.ok = null;
+
+    // Add content to the dialog
+    this.dialog.appendChild(content);
   } else {
     this.form = null;
     if (this.options.form != null && this.dialogType === "form") {
-      const contents = createElementFromHtml(`<div class='jenkins-dialog__contents'/>`);
       this.form = this.options.form;
-      contents.appendChild(this.options.form);
-      this.dialog.appendChild(contents);
-      behavior_shim.applySubtree(contents, true);
+      content.appendChild(this.options.form);
+      setTimeout(() => behavior_shim.applySubtree(content, true));
     }
     if (this.dialogType !== "form") {
-      const message = createElementFromHtml(`<div class='jenkins-dialog__contents'/>`);
       if (this.options.content != null && this.dialogType === "alert") {
-        message.appendChild(this.options.content);
-        this.dialog.appendChild(message);
+        content.appendChild(this.options.content);
       } else if (this.options.message != null && this.dialogType !== "prompt") {
-        const message = createElementFromHtml(`<div class='jenkins-dialog__contents'/>`);
-        this.dialog.appendChild(message);
-        message.innerText = this.options.message;
+        const messageContents = createElementFromHtml(`<div class="jenkins-form-item jenkins-!-text-color-secondary" style="line-height: 1.66" />`);
+        content.appendChild(messageContents);
+        messageContents.innerText = this.options.message;
       }
     }
     if (this.dialogType === "prompt") {
-      let inputDiv = createElementFromHtml(`<div class="jenkins-dialog__input">
-          <input data-id="input" type="text" class='jenkins-input'></div>`);
-      this.dialog.appendChild(inputDiv);
+      let inputDiv = createElementFromHtml(`
+          <div class="jenkins-form-item"><input data-id="input" type="text" class='jenkins-input'></div>`);
+      content.appendChild(inputDiv);
       this.input = inputDiv.querySelector("[data-id=input]");
       if (this.options.message != null) {
-        const message = document.createElement("div");
+        const message = createElementFromHtml(`<div class="jenkins-form-label" />`);
         inputDiv.insertBefore(message, this.input);
         message.innerText = this.options.message;
       }
@@ -1983,6 +2197,9 @@ Dialog.prototype.init = function () {
         this.input.addEventListener("input", () => this.checkInput());
       }
     }
+
+    // Add content to the dialog
+    this.dialog.appendChild(content);
     this.appendButtons();
     this.dialog.addEventListener("keydown", e => {
       if (e.key === "Enter") {
@@ -2006,16 +2223,18 @@ Dialog.prototype.checkInput = function () {
   }
 };
 Dialog.prototype.appendButtons = function () {
-  const buttons = createElementFromHtml(`<div
-      class="jenkins-buttons-row jenkins-buttons-row--equal-width jenkins-dialog__buttons">
-      <button data-id="ok" type="${this.options.submitButton ? "submit" : "button"}" class="jenkins-button jenkins-button--primary ${_typeClassMap[this.options.type]}">${this.options.okText}</button>
+  const shadow = createElementFromHtml(`
+    <div class="jenkins-bottom-app-bar__shadow jenkins-bottom-app-bar__shadow--borderless"></div>`);
+  const buttons = createElementFromHtml(`
+<div id="bottom-sticker">
+    <div class="bottom-sticker-inner jenkins-buttons-row">
       <button data-id="cancel" class="jenkins-button">${this.options.cancelText}</button>
-    </div>`);
-  if (this.dialogType === "form") {
-    this.form.appendChild(buttons);
-  } else {
-    this.dialog.appendChild(buttons);
-  }
+      <button data-id="ok" type="${this.options.submitButton ? "submit" : "button"}" class="jenkins-button jenkins-button--primary ${_typeClassMap[this.options.type]}">${this.options.okText}</button>
+    </div></div>`);
+
+  // Append both
+  this.dialog.querySelector(".jenkins-dialog__contents").appendChild(shadow);
+  this.dialog.querySelector(".jenkins-dialog__contents").appendChild(buttons);
   this.ok = buttons.querySelector("[data-id=ok]");
   this.cancel = buttons.querySelector("[data-id=cancel]");
   if (!this.options.cancel) {
@@ -2140,11 +2359,22 @@ function dialogs_init() {
       options = Object.assign({}, defaults, options);
       let dialog = new Dialog("form", options);
       return dialog.show();
+    },
+    wizard: function (initialUrl, options) {
+      dialog.modal(document.createElement("template"), options);
+      navigateToNextPage(initialUrl, "");
     }
   };
   behavior_shim.specify("[data-type='dialog-opener']", "-dialog-", 1000, element => {
     element.addEventListener("click", () => {
-      renderOnDemandDialog(element.dataset.dialogId);
+      if (element.dataset.dialogUrl != null) {
+        window.dialog.wizard(element.dataset.dialogUrl, {
+          minWidth: "min(550px, 100vw)",
+          preventCloseOnOutsideClick: true
+        });
+      } else {
+        renderOnDemandDialog(element.dataset.dialogId);
+      }
     });
   });
 
@@ -2154,6 +2384,171 @@ function dialogs_init() {
     if (element) {
       renderOnDemandDialog(element.className.match(/dialog-(id\d+)-template/)[1]);
     }
+  }
+}
+function updateWizardTitle(titleText) {
+  if (titleText == null) {
+    return;
+  }
+  const title = document.querySelector(".jenkins-dialog .jenkins-dialog__title > span");
+  if (title != null) {
+    title.textContent = titleText;
+  }
+}
+
+/** Resolve a relative wizard form action against the current step URL. */
+function resolveWizardFormAction(form, baseUrl) {
+  const formAction = form.getAttribute("action");
+  if (formAction && !formAction.startsWith("/") && !formAction.startsWith("http")) {
+    // This might be flaky in the future
+    // Couldn't use new URL(...) as HTMLUnit didn't like it
+    form.action = baseUrl.substring(0, baseUrl.lastIndexOf("/") + 1) + formAction;
+  }
+}
+function submitWizardForm(form) {
+  const jsonInputName = "json";
+  let jsonInput = form.elements.namedItem(jsonInputName);
+  if (jsonInput == null) {
+    jsonInput = document.createElement("input");
+    jsonInput.type = "hidden";
+    jsonInput.name = jsonInputName;
+    form.appendChild(jsonInput);
+  }
+  buildFormTree(form);
+  let body = new FormData(form);
+  const hasFileInput = Array.from(form.elements).some(element => element instanceof HTMLInputElement && element.type === "file");
+  if (!hasFileInput) {
+    body = new URLSearchParams(body);
+  }
+  fetch(form.action, {
+    method: form.method.toUpperCase(),
+    headers: crumb.wrap({}),
+    body: body
+  }).then(rsp => {
+    if (rsp.redirected) {
+      window.location.assign(rsp.url);
+      return;
+    }
+    rsp.text().then(responseText => {
+      const replacementForm = renderWizardForm({
+        responseText,
+        requestUrl: rsp.url,
+        titleText: rsp.headers.get("X-Dialog-Title"),
+        replaceExistingForm: form
+      });
+      if (replacementForm == null) {
+        window.location.assign(rsp.url);
+      }
+    });
+  });
+}
+function configureWizardForm(form) {
+  form.addEventListener("submit", e => {
+    e.preventDefault();
+    submitWizardForm(e.currentTarget);
+  });
+}
+function renderWizardForm({
+  responseText,
+  requestUrl,
+  titleText,
+  replaceExistingForm = null,
+  hideExistingForms = false
+}) {
+  const dialogContents = document.querySelector(".jenkins-dialog .jenkins-dialog__contents");
+  const newDialog = document.createElement("div");
+  newDialog.innerHTML = responseText;
+  const form = newDialog.querySelector("form");
+  if (form == null) {
+    return null;
+  }
+  if (hideExistingForms) {
+    Array.from(dialogContents.children).filter(element => element.tagName === "FORM").forEach(existingForm => existingForm.classList.add("jenkins-hidden"));
+  }
+  resolveWizardFormAction(form, requestUrl);
+  updateWizardTitle(titleText);
+  configureWizardForm(form);
+
+  // Recreate script tags while the form is still detached, so each script
+  // executes exactly once, at the moment the form is inserted into the dialog.
+  recreateScripts(form);
+  if (replaceExistingForm != null) {
+    replaceExistingForm.replaceWith(form);
+  } else {
+    dialogContents.appendChild(form);
+  }
+  focusAutofocusField(form);
+  wireCancelButton(form);
+  return form;
+}
+function focusAutofocusField(form) {
+  const autofocusField = form.querySelector("input[autofocus]:not([disabled]), textarea[autofocus]:not([disabled]), select[autofocus]:not([disabled])");
+  if (autofocusField != null) {
+    autofocusField.focus();
+  }
+}
+function wireCancelButton(form) {
+  const dialog = form.closest("dialog");
+  form.querySelector("[data-id=cancel]")?.addEventListener("click", e => {
+    e.preventDefault();
+    dialog?.dispatchEvent(new Event("cancel"));
+  });
+}
+function navigateToNextPage(url) {
+  fetch(url, {
+    method: "GET",
+    headers: crumb.wrap({})
+  }).then(rsp => {
+    if (rsp.ok) {
+      rsp.text().then(responseText => {
+        const form = renderWizardForm({
+          responseText,
+          requestUrl: rsp.url,
+          titleText: rsp.headers.get("X-Dialog-Title"),
+          hideExistingForms: true
+        });
+        if (form == null) {
+          window.location.assign(rsp.url);
+        }
+      });
+    } else {
+      console.error("Failed to load dialog content, response from API is:", rsp);
+    }
+  });
+}
+
+/*
+ * Recreate script tags to ensure they are executed, as innerHTML does not execute scripts.
+ *
+ */
+function recreateScripts(form) {
+  const scripts = Array.from(form.getElementsByTagName("script"));
+  if (scripts.length === 0) {
+    Behaviour.applySubtree(form, true);
+    return;
+  }
+  for (let i = 0; i < scripts.length; i++) {
+    const original = scripts[i];
+    const script = document.createElement("script");
+    for (let j = 0; j < original.attributes.length; j++) {
+      script.setAttribute(original.attributes[j].name, original.attributes[j].value);
+    }
+    if (original.text) {
+      script.text = original.text;
+    }
+
+    // only attach the load listener to the last script to avoid multiple calls to Behaviour.applySubtree
+    if (i === scripts.length - 1) {
+      script.addEventListener("load", () => {
+        setTimeout(() => {
+          Behaviour.applySubtree(form, true);
+          if (form.method.toLowerCase() !== "get") {
+            form.onsubmit = null; // clear any existing handler
+          }
+        }, 50);
+      });
+    }
+    original.parentNode.replaceChild(script, original);
   }
 }
 /* harmony default export */ var dialogs = ({
@@ -2189,6 +2584,8 @@ function defer_init() {
 
 
 
+
+app_bar.init();
 dropdowns.init();
 command_palette.init();
 defer.init();
@@ -2221,7 +2618,7 @@ dialogs.init();
 /******/ 		};
 /******/ 	
 /******/ 		// Execute the module function
-/******/ 		__webpack_modules__[moduleId].call(module.exports, module, module.exports, __webpack_require__);
+/******/ 		__webpack_modules__[moduleId](module, module.exports, __webpack_require__);
 /******/ 	
 /******/ 		// Return the exports of the module
 /******/ 		return module.exports;
@@ -2279,11 +2676,26 @@ dialogs.init();
 /******/ 	
 /******/ 	/* webpack/runtime/define property getters */
 /******/ 	!function() {
-/******/ 		// define getter functions for harmony exports
+/******/ 		// define getter/value functions for harmony exports
 /******/ 		__webpack_require__.d = function(exports, definition) {
-/******/ 			for(var key in definition) {
-/******/ 				if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
-/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 			if(Array.isArray(definition)) {
+/******/ 				var i = 0;
+/******/ 				while(i < definition.length) {
+/******/ 					var key = definition[i++];
+/******/ 					var binding = definition[i++];
+/******/ 					if(!__webpack_require__.o(exports, key)) {
+/******/ 						if(binding === 0) {
+/******/ 							Object.defineProperty(exports, key, { enumerable: true, value: definition[i++] });
+/******/ 						} else {
+/******/ 							Object.defineProperty(exports, key, { enumerable: true, get: binding });
+/******/ 						}
+/******/ 					} else if(binding === 0) { i++; }
+/******/ 				}
+/******/ 			} else {
+/******/ 				for(var key in definition) {
+/******/ 					if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
+/******/ 						Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 					}
 /******/ 				}
 /******/ 			}
 /******/ 		};
@@ -2376,7 +2788,7 @@ dialogs.init();
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module depends on other loaded chunks and execution need to be delayed
-/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [96], function() { return __webpack_require__(4753); })
+/******/ 	var __webpack_exports__ = __webpack_require__.O(undefined, [96], function() { return __webpack_require__(8226); })
 /******/ 	__webpack_exports__ = __webpack_require__.O(__webpack_exports__);
 /******/ 	
 /******/ })()

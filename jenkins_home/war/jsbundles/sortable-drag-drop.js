@@ -3,9 +3,9 @@
 /******/ 	var __webpack_modules__ = ({
 
 /***/ 5454:
-/***/ (function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+/***/ (function(__unused_webpack_module, __unused_webpack___webpack_exports__, __webpack_require__) {
 
-/* unused harmony export registerSortableTableDragDrop */
+/* unused harmony export registerSortableDragDrop */
 /* harmony import */ var sortablejs_modular_sortable_core_esm_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(3815);
 /**
  * This module provides drag & drop functionality used by certain components,
@@ -19,7 +19,7 @@
 
 
 sortablejs_modular_sortable_core_esm_js__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .Ay.mount(new sortablejs_modular_sortable_core_esm_js__WEBPACK_IMPORTED_MODULE_0__/* .AutoScroll */ .ZZ());
-function registerSortableDragDrop(e) {
+function registerSortableDragDrop(e, onChangeFunction) {
   if (!e || !e.classList.contains("with-drag-drop")) {
     return false;
   }
@@ -61,16 +61,7 @@ function registerSortableDragDrop(e) {
         currentItem.style.rotate = "";
         currentItem = null;
       }
-    }
-  });
-}
-function registerSortableTableDragDrop(e, onChangeFunction) {
-  if (!e || !e.classList.contains("with-drag-drop")) {
-    return false;
-  }
-  Sortable.create(e, {
-    handle: ".dd-handle",
-    items: "tr",
+    },
     onChange: function (event) {
       if (onChangeFunction) {
         onChangeFunction(event);
@@ -107,7 +98,7 @@ window.registerSortableDragDrop = registerSortableDragDrop;
 /******/ 		};
 /******/ 	
 /******/ 		// Execute the module function
-/******/ 		__webpack_modules__[moduleId].call(module.exports, module, module.exports, __webpack_require__);
+/******/ 		__webpack_modules__[moduleId](module, module.exports, __webpack_require__);
 /******/ 	
 /******/ 		// Return the exports of the module
 /******/ 		return module.exports;
@@ -153,11 +144,26 @@ window.registerSortableDragDrop = registerSortableDragDrop;
 /******/ 	
 /******/ 	/* webpack/runtime/define property getters */
 /******/ 	!function() {
-/******/ 		// define getter functions for harmony exports
+/******/ 		// define getter/value functions for harmony exports
 /******/ 		__webpack_require__.d = function(exports, definition) {
-/******/ 			for(var key in definition) {
-/******/ 				if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
-/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 			if(Array.isArray(definition)) {
+/******/ 				var i = 0;
+/******/ 				while(i < definition.length) {
+/******/ 					var key = definition[i++];
+/******/ 					var binding = definition[i++];
+/******/ 					if(!__webpack_require__.o(exports, key)) {
+/******/ 						if(binding === 0) {
+/******/ 							Object.defineProperty(exports, key, { enumerable: true, value: definition[i++] });
+/******/ 						} else {
+/******/ 							Object.defineProperty(exports, key, { enumerable: true, get: binding });
+/******/ 						}
+/******/ 					} else if(binding === 0) { i++; }
+/******/ 				}
+/******/ 			} else {
+/******/ 				for(var key in definition) {
+/******/ 					if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
+/******/ 						Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 					}
 /******/ 				}
 /******/ 			}
 /******/ 		};

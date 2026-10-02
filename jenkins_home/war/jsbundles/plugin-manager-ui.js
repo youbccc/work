@@ -12,9 +12,8 @@ var debounce_default = /*#__PURE__*/__webpack_require__.n(debounce);
 // EXTERNAL MODULE: ./src/main/js/templates/plugin-manager/available.hbs
 var available = __webpack_require__(1322);
 var available_default = /*#__PURE__*/__webpack_require__.n(available);
-// EXTERNAL MODULE: ./node_modules/jquery/dist/jquery.js
-var jquery = __webpack_require__(4692);
-var jquery_default = /*#__PURE__*/__webpack_require__.n(jquery);
+// EXTERNAL MODULE: ./node_modules/jquery/dist-module/jquery.module.js
+var jquery_module = __webpack_require__(8842);
 // EXTERNAL MODULE: ./node_modules/window-handle/index.js
 var window_handle = __webpack_require__(7450);
 // EXTERNAL MODULE: ./node_modules/handlebars/runtime.js
@@ -58,9 +57,9 @@ jenkins.get = function (url, success, options) {
     success: success
   };
   if (options instanceof Object) {
-    jquery_default().extend(args, options);
+    jquery_module/* default */.A.extend(args, options);
   }
-  jquery_default().ajax(args);
+  jquery_module/* default */.A.ajax(args);
 };
 
 /**
@@ -87,7 +86,7 @@ jenkins.post = function (url, data, success, options) {
   var formBody = data;
   if (formBody instanceof Object) {
     if (crumb) {
-      formBody = jquery_default().extend({}, formBody);
+      formBody = jquery_module/* default */.A.extend({}, formBody);
       formBody[crumb.fieldName] = crumb.value;
     }
     formBody = JSON.stringify(formBody);
@@ -103,9 +102,9 @@ jenkins.post = function (url, data, success, options) {
     headers: headers
   };
   if (options instanceof Object) {
-    jquery_default().extend(args, options);
+    jquery_module/* default */.A.extend(args, options);
   }
-  jquery_default().ajax(args);
+  jquery_module/* default */.A.ajax(args);
 };
 
 /**
@@ -191,11 +190,11 @@ jenkins.testConnectivity = function (siteId, handler) {
  * gets the window containing a form, taking in to account top-level iframes
  */
 jenkins.getWindow = function ($form) {
-  $form = jquery_default()($form);
+  $form = (0,jquery_module/* default */.A)($form);
   var wnd = window_handle.getWindow();
-  jquery_default()(top.document).find("iframe").each(function () {
+  (0,jquery_module/* default */.A)(top.document).find("iframe").each(function () {
     var windowFrame = this.contentWindow;
-    var $f = jquery_default()(this).contents().find("form");
+    var $f = (0,jquery_module/* default */.A)(this).contents().find("form");
     $f.each(function () {
       if ($form[0] === this) {
         wnd = windowFrame;
@@ -209,11 +208,11 @@ jenkins.getWindow = function ($form) {
  * Builds a stapler form post
  */
 jenkins.buildFormPost = function ($form) {
-  $form = jquery_default()($form);
+  $form = (0,jquery_module/* default */.A)($form);
   var wnd = jenkins.getWindow($form);
   var form = $form[0];
   if (wnd.buildFormTree(form)) {
-    return $form.serialize() + "&" + jquery_default().param({
+    return $form.serialize() + "&" + jquery_module/* default */.A.param({
       "core:apply": "",
       Submit: "Save",
       json: $form.find("input[name=json]").val()
@@ -226,7 +225,7 @@ jenkins.buildFormPost = function ($form) {
  * Gets the crumb, if crumbs are enabled
  */
 jenkins.getFormCrumb = function ($form) {
-  $form = jquery_default()($form);
+  $form = (0,jquery_module/* default */.A)($form);
   var wnd = jenkins.getWindow($form);
   return wnd.crumb;
 };
@@ -236,10 +235,10 @@ jenkins.getFormCrumb = function ($form) {
  * If last parameter is an object, will be extended to jQuery options (e.g. pass { error: function() ... } to handle errors)
  */
 jenkins.staplerPost = function (url, $form, success, options) {
-  $form = jquery_default()($form);
+  $form = (0,jquery_module/* default */.A)($form);
   var postBody = jenkins.buildFormPost($form);
   var crumb = jenkins.getFormCrumb($form);
-  jenkins.post(url, postBody, success, jquery_default().extend({
+  jenkins.post(url, postBody, success, jquery_module/* default */.A.extend({
     processData: false,
     contentType: "application/x-www-form-urlencoded",
     crumb: crumb
@@ -564,9 +563,15 @@ pluginManager.restartJenkins = function (handler) {
 
 
 
+var latestRequestId = 0;
 function applyFilter(searchQuery) {
   // debounce reduces number of server side calls while typing
+  var requestId = ++latestRequestId;
   api_pluginManager.availablePluginsSearch(searchQuery.toLowerCase().trim(), 50, function (plugins) {
+    // Discard stale responses so they don't overwrite results for a newer query
+    if (requestId !== latestRequestId) {
+      return;
+    }
     var pluginsTable = document.getElementById("plugins");
     var tbody = pluginsTable.querySelector("tbody");
     var admin = pluginsTable.dataset.hasadmin === "true";
@@ -653,7 +658,7 @@ function updateInstallButtonState() {
 
 var Handlebars = __webpack_require__(3633);
 function __default(obj) { return obj && (obj.__esModule ? obj["default"] : obj); }
-module.exports = (Handlebars["default"] || Handlebars).template({"1":function(container,depth0,helpers,partials,data) {
+module.exports = (Handlebars["default"] || Handlebars).template({"0":function(container,depth0,helpers,partials,data) {
     var stack1, alias1=container.lambda, alias2=container.escapeExpression, alias3=depth0 != null ? depth0 : (container.nullContext || {}), lookupProperty = container.lookupProperty || function(parent, propertyName) {
         if (Object.prototype.hasOwnProperty.call(parent, propertyName)) {
           return parent[propertyName];
@@ -666,25 +671,21 @@ module.exports = (Handlebars["default"] || Handlebars).template({"1":function(co
     + "\" data-plugin-version=\""
     + alias2(alias1((depth0 != null ? lookupProperty(depth0,"version") : depth0), depth0))
     + "\">\n"
-    + ((stack1 = lookupProperty(helpers,"if").call(alias3,((stack1 = (data && lookupProperty(data,"root"))) && lookupProperty(stack1,"admin")),{"name":"if","hash":{},"fn":container.program(2, data, 0),"inverse":container.noop,"data":data,"loc":{"start":{"line":3,"column":8},"end":{"line":10,"column":15}}})) != null ? stack1 : "")
-    + "        <td>\n            <div>\n                <a href=\""
-    + alias2(alias1((depth0 != null ? lookupProperty(depth0,"wiki") : depth0), depth0))
-    + "\" class=\"jenkins-table__link\" target=\"_blank\" rel=\"noopener noreferrer\">\n                    "
-    + alias2(alias1((depth0 != null ? lookupProperty(depth0,"displayName") : depth0), depth0))
-    + "\n                    <span class=\"jenkins-visually-hidden\">Version</span>\n                    <span class=\"jenkins-label jenkins-label--tertiary\" style=\"margin-left: 1ch;\">"
-    + alias2(alias1((depth0 != null ? lookupProperty(depth0,"version") : depth0), depth0))
-    + "</span>\n                </a>\n            </div>\n"
-    + ((stack1 = lookupProperty(helpers,"if").call(alias3,(depth0 != null ? lookupProperty(depth0,"categories") : depth0),{"name":"if","hash":{},"fn":container.program(4, data, 0),"inverse":container.noop,"data":data,"loc":{"start":{"line":19,"column":12},"end":{"line":27,"column":19}}})) != null ? stack1 : "")
-    + ((stack1 = lookupProperty(helpers,"if").call(alias3,(depth0 != null ? lookupProperty(depth0,"excerpt") : depth0),{"name":"if","hash":{},"fn":container.program(7, data, 0),"inverse":container.noop,"data":data,"loc":{"start":{"line":28,"column":12},"end":{"line":32,"column":19}}})) != null ? stack1 : "")
-    + ((stack1 = lookupProperty(helpers,"if").call(alias3,(depth0 != null ? lookupProperty(depth0,"newerCoreRequired") : depth0),{"name":"if","hash":{},"fn":container.program(9, data, 0),"inverse":container.noop,"data":data,"loc":{"start":{"line":33,"column":12},"end":{"line":37,"column":19}}})) != null ? stack1 : "")
-    + ((stack1 = lookupProperty(helpers,"if").call(alias3,(depth0 != null ? lookupProperty(depth0,"unresolvedSecurityWarnings") : depth0),{"name":"if","hash":{},"fn":container.program(11, data, 0),"inverse":container.noop,"data":data,"loc":{"start":{"line":38,"column":12},"end":{"line":51,"column":19}}})) != null ? stack1 : "")
-    + ((stack1 = lookupProperty(helpers,"if").call(alias3,(depth0 != null ? lookupProperty(depth0,"deprecated") : depth0),{"name":"if","hash":{},"fn":container.program(14, data, 0),"inverse":container.noop,"data":data,"loc":{"start":{"line":52,"column":12},"end":{"line":56,"column":19}}})) != null ? stack1 : "")
-    + ((stack1 = lookupProperty(helpers,"if").call(alias3,(depth0 != null ? lookupProperty(depth0,"adoptMe") : depth0),{"name":"if","hash":{},"fn":container.program(16, data, 0),"inverse":container.noop,"data":data,"loc":{"start":{"line":57,"column":12},"end":{"line":61,"column":19}}})) != null ? stack1 : "")
+    + ((stack1 = lookupProperty(helpers,"if").call(alias3,((stack1 = (data && lookupProperty(data,"root"))) && lookupProperty(stack1,"admin")),{"name":"if","hash":{},"fn":container.program(1, data, 0),"inverse":container.noop,"data":data,"loc":{"start":{"line":3,"column":8},"end":{"line":10,"column":15}}})) != null ? stack1 : "")
+    + "        <td>\n            <div>\n"
+    + ((stack1 = lookupProperty(helpers,"if").call(alias3,(depth0 != null ? lookupProperty(depth0,"wiki") : depth0),{"name":"if","hash":{},"fn":container.program(2, data, 0),"inverse":container.program(3, data, 0),"data":data,"loc":{"start":{"line":13,"column":16},"end":{"line":25,"column":23}}})) != null ? stack1 : "")
+    + "            </div>\n"
+    + ((stack1 = lookupProperty(helpers,"if").call(alias3,(depth0 != null ? lookupProperty(depth0,"categories") : depth0),{"name":"if","hash":{},"fn":container.program(4, data, 0),"inverse":container.noop,"data":data,"loc":{"start":{"line":27,"column":12},"end":{"line":35,"column":19}}})) != null ? stack1 : "")
+    + ((stack1 = lookupProperty(helpers,"if").call(alias3,(depth0 != null ? lookupProperty(depth0,"excerpt") : depth0),{"name":"if","hash":{},"fn":container.program(6, data, 0),"inverse":container.noop,"data":data,"loc":{"start":{"line":36,"column":12},"end":{"line":40,"column":19}}})) != null ? stack1 : "")
+    + ((stack1 = lookupProperty(helpers,"if").call(alias3,(depth0 != null ? lookupProperty(depth0,"newerCoreRequired") : depth0),{"name":"if","hash":{},"fn":container.program(7, data, 0),"inverse":container.noop,"data":data,"loc":{"start":{"line":41,"column":12},"end":{"line":45,"column":19}}})) != null ? stack1 : "")
+    + ((stack1 = lookupProperty(helpers,"if").call(alias3,(depth0 != null ? lookupProperty(depth0,"unresolvedSecurityWarnings") : depth0),{"name":"if","hash":{},"fn":container.program(8, data, 0),"inverse":container.noop,"data":data,"loc":{"start":{"line":46,"column":12},"end":{"line":59,"column":19}}})) != null ? stack1 : "")
+    + ((stack1 = lookupProperty(helpers,"if").call(alias3,(depth0 != null ? lookupProperty(depth0,"deprecated") : depth0),{"name":"if","hash":{},"fn":container.program(10, data, 0),"inverse":container.noop,"data":data,"loc":{"start":{"line":60,"column":12},"end":{"line":64,"column":19}}})) != null ? stack1 : "")
+    + ((stack1 = lookupProperty(helpers,"if").call(alias3,(depth0 != null ? lookupProperty(depth0,"adoptMe") : depth0),{"name":"if","hash":{},"fn":container.program(11, data, 0),"inverse":container.noop,"data":data,"loc":{"start":{"line":65,"column":12},"end":{"line":69,"column":19}}})) != null ? stack1 : "")
     + "        </td>\n"
-    + ((stack1 = lookupProperty(helpers,"if").call(alias3,(depth0 != null ? lookupProperty(depth0,"releaseTimestamp") : depth0),{"name":"if","hash":{},"fn":container.program(18, data, 0),"inverse":container.program(20, data, 0),"data":data,"loc":{"start":{"line":63,"column":8},"end":{"line":71,"column":15}}})) != null ? stack1 : "")
-    + ((stack1 = lookupProperty(helpers,"if").call(alias3,((stack1 = (data && lookupProperty(data,"root"))) && lookupProperty(stack1,"includeHealthScores")),{"name":"if","hash":{},"fn":container.program(22, data, 0),"inverse":container.noop,"data":data,"loc":{"start":{"line":72,"column":8},"end":{"line":89,"column":15}}})) != null ? stack1 : "")
+    + ((stack1 = lookupProperty(helpers,"if").call(alias3,(depth0 != null ? lookupProperty(depth0,"releaseTimestamp") : depth0),{"name":"if","hash":{},"fn":container.program(12, data, 0),"inverse":container.program(13, data, 0),"data":data,"loc":{"start":{"line":71,"column":8},"end":{"line":79,"column":15}}})) != null ? stack1 : "")
+    + ((stack1 = lookupProperty(helpers,"if").call(alias3,((stack1 = (data && lookupProperty(data,"root"))) && lookupProperty(stack1,"includeHealthScores")),{"name":"if","hash":{},"fn":container.program(14, data, 0),"inverse":container.noop,"data":data,"loc":{"start":{"line":80,"column":8},"end":{"line":103,"column":15}}})) != null ? stack1 : "")
     + "    </tr>\n";
-},"2":function(container,depth0,helpers,partials,data) {
+},"1":function(container,depth0,helpers,partials,data) {
     var alias1=container.lambda, alias2=container.escapeExpression, lookupProperty = container.lookupProperty || function(parent, propertyName) {
         if (Object.prototype.hasOwnProperty.call(parent, propertyName)) {
           return parent[propertyName];
@@ -705,6 +706,34 @@ module.exports = (Handlebars["default"] || Handlebars).template({"1":function(co
     + "."
     + alias2(alias1((depth0 != null ? lookupProperty(depth0,"sourceId") : depth0), depth0))
     + "\"></label>\n                </span>\n            </td>\n";
+},"2":function(container,depth0,helpers,partials,data) {
+    var alias1=container.lambda, alias2=container.escapeExpression, lookupProperty = container.lookupProperty || function(parent, propertyName) {
+        if (Object.prototype.hasOwnProperty.call(parent, propertyName)) {
+          return parent[propertyName];
+        }
+        return undefined
+    };
+
+  return "                    <a href=\""
+    + alias2(alias1((depth0 != null ? lookupProperty(depth0,"wiki") : depth0), depth0))
+    + "\" class=\"jenkins-table__link\" target=\"_blank\" rel=\"noopener noreferrer\">\n                        "
+    + alias2(alias1((depth0 != null ? lookupProperty(depth0,"displayName") : depth0), depth0))
+    + "\n                        <span class=\"jenkins-visually-hidden\">Version</span>\n                        <span class=\"jenkins-label jenkins-label--tertiary\" style=\"margin-left: 1ch;\">"
+    + alias2(alias1((depth0 != null ? lookupProperty(depth0,"version") : depth0), depth0))
+    + "</span>\n                    </a>\n";
+},"3":function(container,depth0,helpers,partials,data) {
+    var alias1=container.lambda, alias2=container.escapeExpression, lookupProperty = container.lookupProperty || function(parent, propertyName) {
+        if (Object.prototype.hasOwnProperty.call(parent, propertyName)) {
+          return parent[propertyName];
+        }
+        return undefined
+    };
+
+  return "                    <span>\n                        "
+    + alias2(alias1((depth0 != null ? lookupProperty(depth0,"displayName") : depth0), depth0))
+    + "\n                        <span class=\"jenkins-visually-hidden\">Version</span>\n                        <span class=\"jenkins-label jenkins-label--tertiary\" style=\"margin-left: 1ch;\">"
+    + alias2(alias1((depth0 != null ? lookupProperty(depth0,"version") : depth0), depth0))
+    + "</span>\n                    </span>\n";
 },"4":function(container,depth0,helpers,partials,data) {
     var stack1, lookupProperty = container.lookupProperty || function(parent, propertyName) {
         if (Object.prototype.hasOwnProperty.call(parent, propertyName)) {
@@ -714,7 +743,7 @@ module.exports = (Handlebars["default"] || Handlebars).template({"1":function(co
     };
 
   return "                <div class=\"app-plugin-manager__categories\">\n"
-    + ((stack1 = lookupProperty(helpers,"each").call(depth0 != null ? depth0 : (container.nullContext || {}),(depth0 != null ? lookupProperty(depth0,"categories") : depth0),{"name":"each","hash":{},"fn":container.program(5, data, 0),"inverse":container.noop,"data":data,"loc":{"start":{"line":21,"column":20},"end":{"line":25,"column":29}}})) != null ? stack1 : "")
+    + ((stack1 = lookupProperty(helpers,"each").call(depth0 != null ? depth0 : (container.nullContext || {}),(depth0 != null ? lookupProperty(depth0,"categories") : depth0),{"name":"each","hash":{},"fn":container.program(5, data, 0),"inverse":container.noop,"data":data,"loc":{"start":{"line":29,"column":20},"end":{"line":33,"column":29}}})) != null ? stack1 : "")
     + "                </div>\n";
 },"5":function(container,depth0,helpers,partials,data) {
     var alias1=container.lambda, alias2=container.escapeExpression;
@@ -724,7 +753,7 @@ module.exports = (Handlebars["default"] || Handlebars).template({"1":function(co
     + "\" class=\"jenkins-badge\">\n                        "
     + alias2(alias1(depth0, depth0))
     + "\n                        </a>\n";
-},"7":function(container,depth0,helpers,partials,data) {
+},"6":function(container,depth0,helpers,partials,data) {
     var stack1, lookupProperty = container.lookupProperty || function(parent, propertyName) {
         if (Object.prototype.hasOwnProperty.call(parent, propertyName)) {
           return parent[propertyName];
@@ -735,7 +764,7 @@ module.exports = (Handlebars["default"] || Handlebars).template({"1":function(co
   return "                <div class=\"except\">\n                    "
     + ((stack1 = container.lambda((depth0 != null ? lookupProperty(depth0,"excerpt") : depth0), depth0)) != null ? stack1 : "")
     + "\n                </div>\n";
-},"9":function(container,depth0,helpers,partials,data) {
+},"7":function(container,depth0,helpers,partials,data) {
     var stack1, lookupProperty = container.lookupProperty || function(parent, propertyName) {
         if (Object.prototype.hasOwnProperty.call(parent, propertyName)) {
           return parent[propertyName];
@@ -746,7 +775,7 @@ module.exports = (Handlebars["default"] || Handlebars).template({"1":function(co
   return "                <div class=\"jenkins-alert jenkins-alert-danger\">\n                    "
     + ((stack1 = container.lambda((depth0 != null ? lookupProperty(depth0,"newerCoreRequired") : depth0), depth0)) != null ? stack1 : "")
     + "\n                </div>\n";
-},"11":function(container,depth0,helpers,partials,data) {
+},"8":function(container,depth0,helpers,partials,data) {
     var stack1, lookupProperty = container.lookupProperty || function(parent, propertyName) {
         if (Object.prototype.hasOwnProperty.call(parent, propertyName)) {
           return parent[propertyName];
@@ -757,9 +786,9 @@ module.exports = (Handlebars["default"] || Handlebars).template({"1":function(co
   return "                <div class=\"jenkins-alert jenkins-alert-danger\">\n                    "
     + container.escapeExpression(container.lambda(((stack1 = (depth0 != null ? lookupProperty(depth0,"unresolvedSecurityWarnings") : depth0)) != null ? lookupProperty(stack1,"text") : stack1), depth0))
     + "\n                    <ul>\n"
-    + ((stack1 = lookupProperty(helpers,"each").call(depth0 != null ? depth0 : (container.nullContext || {}),((stack1 = (depth0 != null ? lookupProperty(depth0,"unresolvedSecurityWarnings") : depth0)) != null ? lookupProperty(stack1,"warnings") : stack1),{"name":"each","hash":{},"fn":container.program(12, data, 0),"inverse":container.noop,"data":data,"loc":{"start":{"line":42,"column":24},"end":{"line":48,"column":33}}})) != null ? stack1 : "")
+    + ((stack1 = lookupProperty(helpers,"each").call(depth0 != null ? depth0 : (container.nullContext || {}),((stack1 = (depth0 != null ? lookupProperty(depth0,"unresolvedSecurityWarnings") : depth0)) != null ? lookupProperty(stack1,"warnings") : stack1),{"name":"each","hash":{},"fn":container.program(9, data, 0),"inverse":container.noop,"data":data,"loc":{"start":{"line":50,"column":24},"end":{"line":56,"column":33}}})) != null ? stack1 : "")
     + "                    </ul>\n                </div>\n";
-},"12":function(container,depth0,helpers,partials,data) {
+},"9":function(container,depth0,helpers,partials,data) {
     var alias1=container.lambda, alias2=container.escapeExpression, lookupProperty = container.lookupProperty || function(parent, propertyName) {
         if (Object.prototype.hasOwnProperty.call(parent, propertyName)) {
           return parent[propertyName];
@@ -772,7 +801,7 @@ module.exports = (Handlebars["default"] || Handlebars).template({"1":function(co
     + "\" target=\"_blank\" rel=\"noopener noreferrer\">\n                                    "
     + alias2(alias1((depth0 != null ? lookupProperty(depth0,"message") : depth0), depth0))
     + "\n                                </a>\n                            </li>\n";
-},"14":function(container,depth0,helpers,partials,data) {
+},"10":function(container,depth0,helpers,partials,data) {
     var stack1, lookupProperty = container.lookupProperty || function(parent, propertyName) {
         if (Object.prototype.hasOwnProperty.call(parent, propertyName)) {
           return parent[propertyName];
@@ -783,7 +812,7 @@ module.exports = (Handlebars["default"] || Handlebars).template({"1":function(co
   return "                <div class=\"jenkins-alert jenkins-alert-warning\">\n                    "
     + ((stack1 = container.lambda((depth0 != null ? lookupProperty(depth0,"deprecated") : depth0), depth0)) != null ? stack1 : "")
     + "\n                </div>\n";
-},"16":function(container,depth0,helpers,partials,data) {
+},"11":function(container,depth0,helpers,partials,data) {
     var stack1, lookupProperty = container.lookupProperty || function(parent, propertyName) {
         if (Object.prototype.hasOwnProperty.call(parent, propertyName)) {
           return parent[propertyName];
@@ -794,7 +823,7 @@ module.exports = (Handlebars["default"] || Handlebars).template({"1":function(co
   return "                <div class=\"jenkins-alert jenkins-alert-warning\">\n                    "
     + ((stack1 = container.lambda((depth0 != null ? lookupProperty(depth0,"adoptMe") : depth0), depth0)) != null ? stack1 : "")
     + "\n                </div>\n";
-},"18":function(container,depth0,helpers,partials,data) {
+},"12":function(container,depth0,helpers,partials,data) {
     var stack1, alias1=container.lambda, alias2=container.escapeExpression, lookupProperty = container.lookupProperty || function(parent, propertyName) {
         if (Object.prototype.hasOwnProperty.call(parent, propertyName)) {
           return parent[propertyName];
@@ -809,9 +838,9 @@ module.exports = (Handlebars["default"] || Handlebars).template({"1":function(co
     + "\">\n                    "
     + alias2(alias1(((stack1 = (depth0 != null ? lookupProperty(depth0,"releaseTimestamp") : depth0)) != null ? lookupProperty(stack1,"displayValue") : stack1), depth0))
     + "\n                </time>\n            </td>\n";
-},"20":function(container,depth0,helpers,partials,data) {
+},"13":function(container,depth0,helpers,partials,data) {
     return "            <td style=\"width: 20%\"></td>\n";
-},"22":function(container,depth0,helpers,partials,data) {
+},"14":function(container,depth0,helpers,partials,data) {
     var stack1, lookupProperty = container.lookupProperty || function(parent, propertyName) {
         if (Object.prototype.hasOwnProperty.call(parent, propertyName)) {
           return parent[propertyName];
@@ -820,9 +849,18 @@ module.exports = (Handlebars["default"] || Handlebars).template({"1":function(co
     };
 
   return "        <td style=\"width: 15%\">\n            <div>\n"
-    + ((stack1 = lookupProperty(helpers,"if").call(depth0 != null ? depth0 : (container.nullContext || {}),(depth0 != null ? lookupProperty(depth0,"healthScore") : depth0),{"name":"if","hash":{},"fn":container.program(23, data, 0),"inverse":container.program(25, data, 0),"data":data,"loc":{"start":{"line":75,"column":16},"end":{"line":86,"column":23}}})) != null ? stack1 : "")
+    + ((stack1 = lookupProperty(helpers,"if").call(depth0 != null ? depth0 : (container.nullContext || {}),(depth0 != null ? lookupProperty(depth0,"healthScore") : depth0),{"name":"if","hash":{},"fn":container.program(15, data, 0),"inverse":container.program(18, data, 0),"data":data,"loc":{"start":{"line":83,"column":16},"end":{"line":100,"column":23}}})) != null ? stack1 : "")
     + "            </div>\n        </td>\n";
-},"23":function(container,depth0,helpers,partials,data) {
+},"15":function(container,depth0,helpers,partials,data) {
+    var stack1, lookupProperty = container.lookupProperty || function(parent, propertyName) {
+        if (Object.prototype.hasOwnProperty.call(parent, propertyName)) {
+          return parent[propertyName];
+        }
+        return undefined
+    };
+
+  return ((stack1 = lookupProperty(helpers,"if").call(depth0 != null ? depth0 : (container.nullContext || {}),(depth0 != null ? lookupProperty(depth0,"wiki") : depth0),{"name":"if","hash":{},"fn":container.program(16, data, 0),"inverse":container.program(17, data, 0),"data":data,"loc":{"start":{"line":84,"column":20},"end":{"line":94,"column":27}}})) != null ? stack1 : "");
+},"16":function(container,depth0,helpers,partials,data) {
     var alias1=container.lambda, alias2=container.escapeExpression, lookupProperty = container.lookupProperty || function(parent, propertyName) {
         if (Object.prototype.hasOwnProperty.call(parent, propertyName)) {
           return parent[propertyName];
@@ -830,14 +868,27 @@ module.exports = (Handlebars["default"] || Handlebars).template({"1":function(co
         return undefined
     };
 
-  return "                    <a href=\""
+  return "                        <a href=\""
     + alias2(alias1((depth0 != null ? lookupProperty(depth0,"wiki") : depth0), depth0))
-    + "/healthScore\"\n                       class=\"jenkins-healthScore--badge jenkins-healthScore--"
+    + "/healthScore\"\n                           class=\"jenkins-healthScore--badge jenkins-healthScore--"
     + alias2(alias1((depth0 != null ? lookupProperty(depth0,"healthScoreClass") : depth0), depth0))
-    + "\"\n                       target=\"_blank\" rel=\"noopener noreferrer\">\n                        "
+    + "\"\n                           target=\"_blank\" rel=\"noopener noreferrer\">\n                            "
     + alias2(alias1((depth0 != null ? lookupProperty(depth0,"healthScore") : depth0), depth0))
-    + "\n                    </a>\n";
-},"25":function(container,depth0,helpers,partials,data) {
+    + "\n                        </a>\n";
+},"17":function(container,depth0,helpers,partials,data) {
+    var alias1=container.lambda, alias2=container.escapeExpression, lookupProperty = container.lookupProperty || function(parent, propertyName) {
+        if (Object.prototype.hasOwnProperty.call(parent, propertyName)) {
+          return parent[propertyName];
+        }
+        return undefined
+    };
+
+  return "                        <span class=\"jenkins-healthScore--badge jenkins-healthScore--"
+    + alias2(alias1((depth0 != null ? lookupProperty(depth0,"healthScoreClass") : depth0), depth0))
+    + "\">\n                            "
+    + alias2(alias1((depth0 != null ? lookupProperty(depth0,"healthScore") : depth0), depth0))
+    + "\n                        </span>\n";
+},"18":function(container,depth0,helpers,partials,data) {
     return "                  <div class=\"icon-lg\">\n                    <!-- symbol: status-aborted -->\n                    <svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\"><ellipse cx=\"256\" cy=\"256\" rx=\"210\" ry=\"210\" fill=\"none\" stroke=\"var(--text-color-secondary)\" stroke-linecap=\"round\" stroke-miterlimit=\"10\" stroke-width=\"36\" /><path fill=\"none\" stroke=\"var(--text-color-secondary)\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"36\" d=\"M192 320l128-128\" /></svg>\n                  </div>\n";
 },"compiler":[8,">= 4.3.0"],"main":function(container,depth0,helpers,partials,data) {
     var stack1, lookupProperty = container.lookupProperty || function(parent, propertyName) {
@@ -847,7 +898,7 @@ module.exports = (Handlebars["default"] || Handlebars).template({"1":function(co
         return undefined
     };
 
-  return ((stack1 = lookupProperty(helpers,"each").call(depth0 != null ? depth0 : (container.nullContext || {}),(depth0 != null ? lookupProperty(depth0,"plugins") : depth0),{"name":"each","hash":{},"fn":container.program(1, data, 0),"inverse":container.noop,"data":data,"loc":{"start":{"line":1,"column":0},"end":{"line":91,"column":9}}})) != null ? stack1 : "");
+  return ((stack1 = lookupProperty(helpers,"each").call(depth0 != null ? depth0 : (container.nullContext || {}),(depth0 != null ? lookupProperty(depth0,"plugins") : depth0),{"name":"each","hash":{},"fn":container.program(0, data, 0),"inverse":container.noop,"data":data,"loc":{"start":{"line":1,"column":0},"end":{"line":105,"column":9}}})) != null ? stack1 : "");
 },"useData":true});
 
 /***/ })
@@ -872,7 +923,7 @@ module.exports = (Handlebars["default"] || Handlebars).template({"1":function(co
 /******/ 		};
 /******/ 	
 /******/ 		// Execute the module function
-/******/ 		__webpack_modules__[moduleId].call(module.exports, module, module.exports, __webpack_require__);
+/******/ 		__webpack_modules__[moduleId](module, module.exports, __webpack_require__);
 /******/ 	
 /******/ 		// Return the exports of the module
 /******/ 		return module.exports;
@@ -930,11 +981,26 @@ module.exports = (Handlebars["default"] || Handlebars).template({"1":function(co
 /******/ 	
 /******/ 	/* webpack/runtime/define property getters */
 /******/ 	!function() {
-/******/ 		// define getter functions for harmony exports
+/******/ 		// define getter/value functions for harmony exports
 /******/ 		__webpack_require__.d = function(exports, definition) {
-/******/ 			for(var key in definition) {
-/******/ 				if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
-/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 			if(Array.isArray(definition)) {
+/******/ 				var i = 0;
+/******/ 				while(i < definition.length) {
+/******/ 					var key = definition[i++];
+/******/ 					var binding = definition[i++];
+/******/ 					if(!__webpack_require__.o(exports, key)) {
+/******/ 						if(binding === 0) {
+/******/ 							Object.defineProperty(exports, key, { enumerable: true, value: definition[i++] });
+/******/ 						} else {
+/******/ 							Object.defineProperty(exports, key, { enumerable: true, get: binding });
+/******/ 						}
+/******/ 					} else if(binding === 0) { i++; }
+/******/ 				}
+/******/ 			} else {
+/******/ 				for(var key in definition) {
+/******/ 					if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
+/******/ 						Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 					}
 /******/ 				}
 /******/ 			}
 /******/ 		};

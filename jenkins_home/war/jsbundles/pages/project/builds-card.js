@@ -56,8 +56,8 @@ function load(options = {}) {
   });
   const paginationOrFirst = buildHistoryPage.dataset.pageHasUp === "false" || "older-than" in params || "newer-than" in params;
 
-  // Avoid fetching if the page isn't visible
-  if (document.hidden) {
+  // Avoid fetching if the page isn't visible or if auto-refresh is disabled and this isn't a forced refresh
+  if (document.hidden || buildHistoryPage.dataset.autoRefresh === "false" && !("force" in params)) {
     return;
   }
   createRefreshTimeout();
@@ -124,12 +124,14 @@ function updateCardControls(parameters) {
 }
 paginationPrevious.addEventListener("click", () => {
   load({
-    "newer-than": buildHistoryPage.dataset.pageEntryNewest
+    "newer-than": buildHistoryPage.dataset.pageEntryNewest,
+    force: true
   });
 });
 paginationNext.addEventListener("click", () => {
   load({
-    "older-than": buildHistoryPage.dataset.pageEntryOldest
+    "older-than": buildHistoryPage.dataset.pageEntryOldest,
+    force: true
   });
 });
 function createRefreshTimeout() {
@@ -150,6 +152,23 @@ document.addEventListener("DOMContentLoaded", function () {
     container.classList.add("app-builds-container--loading");
     pageSearch.classList.add("jenkins-search--loading");
     debouncedLoad();
+  });
+  behavior_shim.specify("#pause-history-widget-updates", "pause-history-widget-updates", 0, function (pauseButton) {
+    pauseButton.addEventListener("click", function () {
+      const autoRefresh = buildHistoryPage.dataset.autoRefresh === "true";
+      buildHistoryPage.dataset.autoRefresh = autoRefresh ? "false" : "true";
+      pauseButton.childNodes[2].textContent = autoRefresh ? buildHistoryPage.dataset.resumeText : buildHistoryPage.dataset.pauseText;
+      const refreshButton = document.getElementById("refresh-history-widget");
+      refreshButton.classList.toggle("jenkins-hidden");
+      load();
+    });
+  });
+  behavior_shim.specify("#refresh-history-widget", "refresh-builod-history-widget", 0, function (refreshButton) {
+    refreshButton.addEventListener("click", function () {
+      load({
+        force: true
+      });
+    });
   });
   container.classList.add("app-builds-container--loading");
   load();
@@ -180,7 +199,7 @@ document.addEventListener("DOMContentLoaded", function () {
 /******/ 		};
 /******/ 	
 /******/ 		// Execute the module function
-/******/ 		__webpack_modules__[moduleId].call(module.exports, module, module.exports, __webpack_require__);
+/******/ 		__webpack_modules__[moduleId](module, module.exports, __webpack_require__);
 /******/ 	
 /******/ 		// Return the exports of the module
 /******/ 		return module.exports;
@@ -238,11 +257,26 @@ document.addEventListener("DOMContentLoaded", function () {
 /******/ 	
 /******/ 	/* webpack/runtime/define property getters */
 /******/ 	!function() {
-/******/ 		// define getter functions for harmony exports
+/******/ 		// define getter/value functions for harmony exports
 /******/ 		__webpack_require__.d = function(exports, definition) {
-/******/ 			for(var key in definition) {
-/******/ 				if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
-/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 			if(Array.isArray(definition)) {
+/******/ 				var i = 0;
+/******/ 				while(i < definition.length) {
+/******/ 					var key = definition[i++];
+/******/ 					var binding = definition[i++];
+/******/ 					if(!__webpack_require__.o(exports, key)) {
+/******/ 						if(binding === 0) {
+/******/ 							Object.defineProperty(exports, key, { enumerable: true, value: definition[i++] });
+/******/ 						} else {
+/******/ 							Object.defineProperty(exports, key, { enumerable: true, get: binding });
+/******/ 						}
+/******/ 					} else if(binding === 0) { i++; }
+/******/ 				}
+/******/ 			} else {
+/******/ 				for(var key in definition) {
+/******/ 					if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
+/******/ 						Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 					}
 /******/ 				}
 /******/ 			}
 /******/ 		};

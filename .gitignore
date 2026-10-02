@@ -1,0 +1,6 @@
+cat << 'EOF' > .gitignore
+jenkins_home/
+watch_and_trigger.sh
+watch.log
+*.log
+EOF

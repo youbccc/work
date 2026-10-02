@@ -8,7 +8,8 @@ function createElementFromHtml(html) {
   return template.content.firstElementChild;
 }
 function toId(string) {
-  return string.trim().replace(/[\W_]+/g, "-").toLowerCase();
+  const trimmed = string.trim();
+  return Array.from(trimmed).map(c => c.codePointAt(0).toString(16)).join("-");
 }
 ;// ./src/main/js/pages/computer-set/index.js
 
