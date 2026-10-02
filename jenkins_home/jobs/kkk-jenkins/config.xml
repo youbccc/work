@@ -1,0 +1,39 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job@1571.1580.v18e46842c125">
+  <actions>
+    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobAction plugin="pipeline-model-definition@2.2293.v6e7193cec599"/>
+    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction plugin="pipeline-model-definition@2.2293.v6e7193cec599">
+      <jobProperties/>
+      <triggers/>
+      <parameters/>
+      <options/>
+    </org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction>
+  </actions>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties/>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@4383.v04fa_a_3d67b_d9">
+    <script>pipeline {
+    agent any
+
+    stages {
+        stage(&apos;1. Docker 버전 확인&apos;) {
+            steps {
+                // 젠킨스가 도커 CLI 명령어를 수행
+                sh &apos;docker --version&apos;
+                sh &apos;docker ps&apos;
+            }
+        }
+        stage(&apos;2. 테스트 이미지 생성 및 실행&apos;) {
+            steps {
+                // 우분투 컨테이너를 임시로 띄워 테스트
+                sh &apos;docker run --rm ubuntu:22.04 echo &quot;Hello from Docker inside Jenkins!&quot;&apos;
+            }
+        }
+    }
+}</script>
+    <sandbox>true</sandbox>
+  </definition>
+  <triggers/>
+  <disabled>false</disabled>
+</flow-definition>
