@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y \
     git \
     python3 \
     build-essential \
-    ethtool
+    ethtool \
     && rm -rf /var/lib/apt/lists/*
 
 # 작업 디렉터리 설정
