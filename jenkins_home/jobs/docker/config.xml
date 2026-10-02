@@ -1,0 +1,63 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job@1571.1580.v18e46842c125">
+  <actions>
+    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobAction plugin="pipeline-model-definition@2.2293.v6e7193cec599"/>
+    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction plugin="pipeline-model-definition@2.2293.v6e7193cec599">
+      <jobProperties/>
+      <triggers/>
+      <parameters/>
+      <options/>
+    </org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction>
+  </actions>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
+      <triggers>
+        <hudson.triggers.SCMTrigger>
+          <spec> H/5 * * * *</spec>
+          <ignorePostCommitHooks>false</ignorePostCommitHooks>
+        </hudson.triggers.SCMTrigger>
+      </triggers>
+    </org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>
+  </properties>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@4383.v04fa_a_3d67b_d9">
+    <script>pipeline {
+    agent any
+
+    stages {
+        stage(&apos;1. GitHub 소스코드 가져오기&apos;) {
+            steps {
+                // 본인의 GitHub 저장소 주소로 변경하세요
+                git branch: &apos;main&apos;, url: &apos;https://github.com/youbccc/work.git&apos;
+            }
+        }
+
+        stage(&apos;2. 기존 컨테이너 정리&apos;) {
+            steps {
+                // 이미 실행 중인 컨테이너가 있다면 중지 및 삭제 (오류 방지용 || true)
+                sh &apos;docker stop kkk-work || true&apos;
+                sh &apos;docker rm kkk-work || true&apos;
+            }
+        }
+
+        stage(&apos;3. Dockerfile 기반 이미지 빌드&apos;) {
+            steps {
+                // Git에서 가져온 Dockerfile을 빌드
+                sh &apos;docker build -t kkk-image:latest .&apos;
+            }
+        }
+
+        stage(&apos;4. 새 컨테이너 실행 (배포)&apos;) {
+            steps {
+                // 빌드된 이미지로 새 컨테이너 실행
+                sh &apos;docker run -d --name kkk-work kkk-image:latest tail -f /dev/null&apos;
+            }
+        }
+    }
+}</script>
+    <sandbox>true</sandbox>
+  </definition>
+  <triggers/>
+  <disabled>false</disabled>
+</flow-definition>
