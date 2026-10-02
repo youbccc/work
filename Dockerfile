@@ -12,10 +12,11 @@ RUN apt-get update && apt-get install -y \
     python3-pip \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
-echo "# test trigger" >> Dockerfile
 
+echo "# trigger test" >> Dockerfile
 # 작업 디렉터리 설정
 WORKDIR /scr
 
 # 컨테이너가 바로 종료되지 않도록 bash 유지
 CMD ["/bin/bash"]
+# trigger test
