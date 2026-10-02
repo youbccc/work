@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y \
     python3-pip \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
+echo "# test trigger" >> Dockerfile
 
 # 작업 디렉터리 설정
 WORKDIR /scr
