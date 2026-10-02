@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-echo "# trigger test" >> Dockerfile
+"# trigger test" >> Dockerfile
 # 작업 디렉터리 설정
 WORKDIR /scr
 
